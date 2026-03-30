@@ -169,6 +169,18 @@
     <a href="https://maps.app.goo.gl/W8MfAVUEHCt6Kgc46" target="_blank">Ver en Google Maps &#8594;</a>
   </div>
 
+  <div id="setupBox" style="display:none;background:#FAEEDA;border:1px solid rgba(133,79,11,0.3);border-radius:12px;padding:14px 18px;margin-bottom:1.5rem;font-size:13px;color:#57534E;line-height:1.7">
+    <strong style="color:#1C1917;font-size:14px">&#9881; Setup para compartir (una sola vez)</strong><br>
+    1. Entra a <a href="https://script.google.com" target="_blank" style="color:#C2440E">script.google.com</a> con tu cuenta de Google<br>
+    2. Click en <strong>Nuevo proyecto</strong><br>
+    3. Borra todo el codigo y pega el codigo del archivo <strong>gas-backend.txt</strong> que descargaste<br>
+    4. Click en <strong>Implementar &rarr; Nueva implementacion &rarr; Aplicacion web</strong><br>
+    5. En "Quien tiene acceso" elegí <strong>Cualquier persona</strong> &rarr; Implementar<br>
+    6. Copia la URL que te da y pegala cuando la pagina te la pida<br>
+    <button onclick="document.getElementById('setupBox').style.display='none'" style="margin-top:8px;background:none;border:1px solid rgba(133,79,11,0.4);border-radius:8px;padding:4px 12px;cursor:pointer;font-size:12px;color:#854F0B">Cerrar instrucciones</button>
+    &nbsp;<button onclick="localStorage.removeItem('vlc_gas_url');toast('URL reseteada, te la pedira la proxima vez')" style="margin-top:8px;background:none;border:1px solid rgba(133,79,11,0.4);border-radius:8px;padding:4px 12px;cursor:pointer;font-size:12px;color:#854F0B">Resetear URL</button>
+  </div>
+
   <div class="sync-bar">
     <span class="sync-dot ok" id="syncDot"></span>
     <span id="syncLabel">Listo</span>
@@ -177,6 +189,7 @@
   <div class="toolbar">
     <button class="btn-add" onclick="openAdd()">+ Agregar departamento</button>
     <button class="btn-secondary" id="shareLinkBtn" onclick="shareLink()">&#128279; Copiar link para compartir</button>
+    <button class="btn-secondary" onclick="document.getElementById('setupBox').style.display='block';window.scrollTo(0,0)" style="font-size:12px;padding:8px 12px">&#9881; Setup</button>
     <select id="sortSelect" onchange="setSortAndRender()" style="background:transparent;border:1px solid rgba(28,25,23,0.22);border-radius:12px;padding:10px 14px;font-family:DM Sans,sans-serif;font-size:14px;color:#57534E;cursor:pointer;outline:none;">
       <option value="new">Mas reciente</option>
       <option value="price_asc">Precio: menor a mayor</option>
@@ -294,52 +307,35 @@ let starVal = 0;
 let photos = [];
 let currentView = localStorage.getItem('vlc_view') || 'cards';
 let currentSort = 'new';
+var DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbwIZ_ncAnwBGokBLQn0dmlc-ofYXmMc6av_98ICjAMiiDzguJad2TJ-TKqIUX4L9yktEA/exec';
 
 async function loadData() {
   var params = new URLSearchParams(window.location.search);
-  var blobId = params.get('blob');
-  var dataParam = params.get('data');
+  var shareId = params.get('share');
 
-  if (blobId) {
+  if (shareId) {
     setSyncStatus('loading', 'Cargando lista compartida...');
-    try {
-      var url = 'https://jsonblob.com/api/jsonBlob/' + blobId;
-      var res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      if (!res.ok) throw new Error('status ' + res.status);
-      var data = await res.json();
-      var remote = data.apts;
-      if (Array.isArray(remote)) {
-        var local = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        var ids = new Set(remote.map(function(a) { return a.id; }));
-        local.forEach(function(a) { if (!ids.has(a.id)) remote.push(a); });
-        apts = remote;
-        localStorage.setItem('vlc_share_id', blobId);
-        saveLocal(false);
-        history.replaceState(null, '', window.location.pathname);
-        setSyncStatus('ok', 'Lista importada');
-        toast('Lista cargada del link compartido!');
+    var GAS_URL = localStorage.getItem('vlc_gas_url') || DEFAULT_GAS_URL;
+    if (GAS_URL) {
+      try {
+        var res = await fetch(GAS_URL + '?action=load&id=' + shareId);
+        var data = await res.json();
+        var remote = data.apts;
+        if (Array.isArray(remote)) {
+          var local = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+          var ids = new Set(remote.map(function(a) { return a.id; }));
+          local.forEach(function(a) { if (!ids.has(a.id)) remote.push(a); });
+          apts = remote;
+          saveLocal(false);
+          history.replaceState(null, '', window.location.pathname);
+          setSyncStatus('ok', 'Lista importada');
+          toast('Lista cargada!');
+        }
+      } catch(e) {
+        setSyncStatus('error', 'Error al cargar');
+        toast('No se pudo cargar: ' + e.message);
+        apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
       }
-    } catch(e) {
-      setSyncStatus('error', 'Error al cargar');
-      toast('No se pudo cargar: ' + e.message);
-      apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    }
-  } else if (dataParam) {
-    try {
-      var decoded = JSON.parse(decodeURIComponent(escape(atob(dataParam))));
-      if (Array.isArray(decoded)) {
-        var local2 = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        var ids2 = new Set(decoded.map(function(a) { return a.id; }));
-        local2.forEach(function(a) { if (!ids2.has(a.id)) decoded.push(a); });
-        apts = decoded;
-        saveLocal(false);
-        history.replaceState(null, '', window.location.pathname);
-        setSyncStatus('ok', 'Lista importada');
-        toast('Lista cargada del link compartido!');
-      }
-    } catch(e) {
-      apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      setSyncStatus('ok', 'Listo');
     }
   } else {
     apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -594,6 +590,7 @@ function showGallery(i) {
 function closeGallery() { document.getElementById('galleryModal').classList.remove('open'); }
 
 async function shareLink() {
+  var GAS_URL = localStorage.getItem('vlc_gas_url') || DEFAULT_GAS_URL;
   if (apts.length === 0) { toast('Primero agrega algun departamento.'); return; }
   var btn = document.getElementById('shareLinkBtn');
   btn.textContent = 'Guardando...';
@@ -603,57 +600,14 @@ async function shareLink() {
       return Object.assign({}, a, { photos: (a.photos||[]).filter(function(p) { return !p.startsWith('data:'); }) });
     });
     var hasLocal = apts.some(function(a) { return (a.photos||[]).some(function(p) { return p.startsWith('data:'); }); });
-
-    var existingId = localStorage.getItem('vlc_share_id');
-    var shareId = null;
-
-    // Try to update existing
-    if (existingId) {
-      try {
-        var r1 = await fetch('https://jsonblob.com/api/jsonBlob/' + existingId, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ apts: payload })
-        });
-        if (r1.ok) shareId = existingId;
-      } catch(e1) {}
-    }
-
-    // Create new if no existing
-    if (!shareId) {
-      try {
-        var r2 = await fetch('https://jsonblob.com/api/jsonBlob', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ apts: payload })
-        });
-        if (r2.ok) {
-          var loc = r2.headers.get('Location') || '';
-          shareId = loc.split('/').pop();
-          if (shareId) localStorage.setItem('vlc_share_id', shareId);
-        }
-      } catch(e2) {}
-    }
-
-    // Last resort: use a CORS proxy
-    if (!shareId) {
-      var r3 = await fetch('https://corsproxy.io/?https://jsonblob.com/api/jsonBlob', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ apts: payload })
-      });
-      if (!r3.ok) throw new Error('No se pudo guardar (status ' + r3.status + ')');
-      var loc3 = r3.headers.get('Location') || '';
-      shareId = loc3.split('/').pop();
-      if (!shareId) {
-        var d3 = await r3.json();
-        shareId = (d3.uid || d3.id || '');
-      }
-      if (!shareId) throw new Error('No se recibio ID del servidor');
-      localStorage.setItem('vlc_share_id', shareId);
-    }
-
-    var shareUrl = window.location.href.split('?')[0] + '?blob=' + shareId;
+    var res = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'save', apts: payload })
+    });
+    var data = await res.json();
+    if (!data.id) throw new Error('No se recibio ID');
+    localStorage.setItem('vlc_share_id', data.id);
+    var shareUrl = window.location.href.split('?')[0] + '?share=' + data.id;
     try { await navigator.clipboard.writeText(shareUrl); }
     catch {
       var ta = document.createElement('textarea');
