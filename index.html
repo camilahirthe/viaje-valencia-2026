@@ -177,6 +177,13 @@
   <div class="toolbar">
     <button class="btn-add" onclick="openAdd()">+ Agregar departamento</button>
     <button class="btn-secondary" id="shareLinkBtn" onclick="shareLink()">&#128279; Copiar link para compartir</button>
+    <select id="sortSelect" onchange="setSortAndRender()" style="background:transparent;border:1px solid rgba(28,25,23,0.22);border-radius:12px;padding:10px 14px;font-family:DM Sans,sans-serif;font-size:14px;color:#57534E;cursor:pointer;outline:none;">
+      <option value="new">Mas reciente</option>
+      <option value="price_asc">Precio: menor a mayor</option>
+      <option value="price_desc">Precio: mayor a menor</option>
+      <option value="dist">Distancia: menor a mayor</option>
+      <option value="stars">Mejor valorado</option>
+    </select>
     <div class="view-toggle">
       <button class="view-btn active" id="btnCards" onclick="setView('cards')">&#127183; Tarjetas</button>
       <button class="view-btn" id="btnTable" onclick="setView('table')">&#128203; Tabla</button>
@@ -265,6 +272,7 @@ let editIdx = -1;
 let starVal = 0;
 let photos = [];
 let currentView = localStorage.getItem('vlc_view') || 'cards';
+let currentSort = 'new';
 
 async function loadData() {
   const params = new URLSearchParams(window.location.search);
@@ -295,8 +303,28 @@ async function loadData() {
       apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     }
   } else {
-    apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    setSyncStatus('ok', 'Listo');
+    var dataParam = params.get('data');
+    if (dataParam) {
+      try {
+        var decoded = JSON.parse(decodeURIComponent(escape(atob(dataParam))));
+        if (Array.isArray(decoded)) {
+          var local2 = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+          var ids2 = new Set(decoded.map(function(a) { return a.id; }));
+          local2.forEach(function(a) { if (!ids2.has(a.id)) decoded.push(a); });
+          apts = decoded;
+          saveLocal(false);
+          history.replaceState(null, '', window.location.pathname);
+          setSyncStatus('ok', 'Lista importada');
+          toast('Lista cargada del link compartido!');
+        }
+      } catch(e) {
+        apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        setSyncStatus('ok', 'Listo');
+      }
+    } else {
+      apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      setSyncStatus('ok', 'Listo');
+    }
   }
   setView(currentView, false);
   render();
@@ -328,6 +356,33 @@ function setView(v, save) {
   render();
 }
 
+function setSortAndRender() {
+  currentSort = document.getElementById('sortSelect').value;
+  render();
+}
+
+function getSorted() {
+  var list = apts.slice();
+  if (currentSort === 'price_asc') {
+    list.sort(function(a, b) {
+      return (parseFloat(a.price) || 99999) - (parseFloat(b.price) || 99999);
+    });
+  } else if (currentSort === 'price_desc') {
+    list.sort(function(a, b) {
+      return (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0);
+    });
+  } else if (currentSort === 'dist') {
+    list.sort(function(a, b) {
+      var da = parseFloat((a.dist || '').replace(/[^0-9.]/g, '')) || 9999;
+      var db = parseFloat((b.dist || '').replace(/[^0-9.]/g, '')) || 9999;
+      return da - db;
+    });
+  } else if (currentSort === 'stars') {
+    list.sort(function(a, b) { return (b.stars || 0) - (a.stars || 0); });
+  }
+  return list;
+}
+
 function render() {
   var area = document.getElementById('contentArea');
   document.getElementById('headerCount').textContent =
@@ -346,8 +401,9 @@ function render() {
 }
 
 function renderCards(area) {
+  var sorted = getSorted();
   var html = '<div class="grid">';
-  apts.forEach(function(a, i) {
+  sorted.forEach(function(a, i) {
     var firstPhoto = a.photos && a.photos.length ? a.photos[0] : null;
     var stars = a.stars ? '&#9733;'.repeat(a.stars) + '&#9734;'.repeat(5 - a.stars) : '';
     html += '<div class="card">';
@@ -387,8 +443,9 @@ function renderCards(area) {
 }
 
 function renderTable(area) {
+  var sorted = getSorted();
   var html = '<div class="table-wrap"><table><thead><tr><th>Precio</th><th>Nombre</th><th>Distancia</th><th>Nota</th><th>Comentario</th><th>Anuncio</th><th></th></tr></thead><tbody>';
-  apts.forEach(function(a, i) {
+  sorted.forEach(function(a, i) {
     var stars = a.stars ? '&#9733;'.repeat(a.stars) + '&#9734;'.repeat(5 - a.stars) : '&#8212;';
     html += '<tr>';
     html += '<td class="td-price">' + (a.price ? esc(a.price) : '<span style="color:var(--ink3);font-size:13px">&#8212;</span>') + '</td>';
@@ -517,9 +574,11 @@ async function shareLink() {
       return Object.assign({}, a, { photos: (a.photos||[]).filter(function(p) { return !p.startsWith('data:'); }) });
     });
     var hasLocal = apts.some(function(a) { return (a.photos||[]).some(function(p) { return p.startsWith('data:'); }); });
+
     var existingId = localStorage.getItem('vlc_blob_id');
     var blobId = null;
 
+    // Try jsonblob first
     if (existingId) {
       try {
         var r1 = await fetch('https://jsonblob.com/api/jsonBlob/' + existingId, {
@@ -532,26 +591,42 @@ async function shareLink() {
     }
 
     if (!blobId) {
-      var r2 = await fetch('https://jsonblob.com/api/jsonBlob', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ apts: payload })
-      });
-      if (!r2.ok) throw new Error('Error del servidor: ' + r2.status);
-      var loc = r2.headers.get('Location') || '';
-      blobId = loc.split('/').pop();
-      if (!blobId) throw new Error('No se recibio ID');
-      localStorage.setItem('vlc_blob_id', blobId);
+      try {
+        var r2 = await fetch('https://jsonblob.com/api/jsonBlob', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ apts: payload })
+        });
+        if (r2.ok) {
+          var loc = r2.headers.get('Location') || '';
+          blobId = loc.split('/').pop();
+          if (blobId) localStorage.setItem('vlc_blob_id', blobId);
+        }
+      } catch(e3) {}
+    }
+
+    // Fallback: encode in URL directly (works always, shorter with few apts)
+    if (!blobId) {
+      var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+      var shareUrl = window.location.href.split('?')[0] + '?data=' + encoded;
+      try { await navigator.clipboard.writeText(shareUrl); }
+      catch {
+        var ta = document.createElement('textarea');
+        ta.value = shareUrl; ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      toast(hasLocal ? 'Link copiado! (fotos locales no se comparten)' : 'Link copiado! Enviaselo a papa y tio');
+      return;
     }
 
     var shareUrl = window.location.href.split('?')[0] + '?blob=' + blobId;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-    } catch(ce) {
-      var ta = document.createElement('textarea');
-      ta.value = shareUrl; ta.style.cssText = 'position:fixed;opacity:0';
-      document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta);
+    try { await navigator.clipboard.writeText(shareUrl); }
+    catch {
+      var ta2 = document.createElement('textarea');
+      ta2.value = shareUrl; ta2.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta2); ta2.select();
+      document.execCommand('copy'); document.body.removeChild(ta2);
     }
     toast(hasLocal ? 'Link copiado! (fotos locales no se comparten)' : 'Link copiado! Enviaselo a papa y tio');
   } catch(e) {
@@ -561,6 +636,7 @@ async function shareLink() {
     btn.disabled = false;
   }
 }
+
 
 function toast(msg) {
   var t = document.getElementById('toast');
