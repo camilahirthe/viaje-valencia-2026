@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viaje Valencia 2026 🏠</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F7F4EE;
+    --warm: #EDE8DE;
+    --ink: #1C1917;
+    --ink2: #57534E;
+    --ink3: #A8A29E;
+    --accent: #C2440E;
+    --accent2: #E8824A;
+    --green: #2D5A0E;
+    --greenBg: #D6EDBE;
+    --blue: #185FA5;
+    --blueBg: #E6F1FB;
+    --amber: #854F0B;
+    --amberBg: #FAEEDA;
+    --border: rgba(28,25,23,0.12);
+    --border2: rgba(28,25,23,0.22);
+    --radius: 12px;
+    --shadow: 0 4px 20px rgba(28,25,23,0.1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--cream); color: var(--ink); font-family: 'DM Sans', sans-serif; font-weight: 300; min-height: 100vh; }
+
+  .site-header { background: var(--ink); color: var(--cream); padding: 2.5rem 2rem 2rem; position: relative; overflow: hidden; }
+  .site-header::before { content:''; position:absolute; right:-60px; top:-60px; width:260px; height:260px; border-radius:50%; background:var(--accent); opacity:0.15; }
+  .site-header::after { content:''; position:absolute; right:40px; bottom:-80px; width:180px; height:180px; border-radius:50%; background:var(--accent2); opacity:0.1; }
+  .header-inner { max-width: 960px; margin: 0 auto; position: relative; z-index: 1; }
+  .header-eyebrow { font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent2); margin-bottom:10px; }
+  .header-title { font-family:'Fraunces',serif; font-weight:300; font-size:clamp(2rem,5vw,3rem); line-height:1.1; color:var(--cream); }
+  .header-title em { font-style:italic; color:var(--accent2); }
+  .header-sub { margin-top:8px; font-size:14px; color:rgba(247,244,238,0.6); }
+  .header-count { display:inline-block; margin-top:16px; font-size:13px; background:rgba(247,244,238,0.1); border:1px solid rgba(247,244,238,0.2); border-radius:20px; padding:4px 14px; color:rgba(247,244,238,0.8); }
+
+  .main { max-width:960px; margin:0 auto; padding:2rem; }
+
+  .address-bar { display:flex; align-items:center; gap:10px; background:white; border:1px solid var(--border); border-radius:var(--radius); padding:12px 16px; margin-bottom:1.5rem; font-size:14px; color:var(--ink2); flex-wrap:wrap; }
+  .address-bar strong { color:var(--ink); font-weight:500; }
+  .address-bar a { color:var(--accent); text-decoration:none; font-weight:500; white-space:nowrap; }
+  .address-bar a:hover { text-decoration:underline; }
+
+  .sync-bar { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--ink3); margin-bottom:1.25rem; }
+  .sync-dot { width:7px; height:7px; border-radius:50%; background:var(--ink3); flex-shrink:0; }
+  .sync-dot.ok { background:#3B6D11; }
+  .sync-dot.loading { background:var(--accent2); animation:pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .toolbar { display:flex; gap:10px; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; }
+  .btn-add { background:var(--accent); color:white; border:none; border-radius:var(--radius); padding:10px 20px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; cursor:pointer; transition:background 0.15s; }
+  .btn-add:hover { background:#A83A0A; }
+  .btn-secondary { background:transparent; color:var(--ink2); border:1px solid var(--border2); border-radius:var(--radius); padding:10px 16px; font-family:'DM Sans',sans-serif; font-size:14px; cursor:pointer; transition:background 0.15s; white-space:nowrap; }
+  .btn-secondary:hover { background:var(--warm); }
+  .btn-secondary:disabled { opacity:0.5; cursor:not-allowed; }
+
+  .view-toggle { display:flex; border:1px solid var(--border2); border-radius:var(--radius); overflow:hidden; margin-left:auto; }
+  .view-btn { background:transparent; border:none; padding:9px 14px; font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; color:var(--ink3); transition:all 0.15s; }
+  .view-btn.active { background:var(--ink); color:var(--cream); }
+
+  /* CARDS */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+  .card { background:var(--warm); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:box-shadow 0.2s,transform 0.2s; }
+  .card:hover { box-shadow:var(--shadow); transform:translateY(-2px); }
+  .card-photo { width:100%; height:170px; object-fit:cover; display:block; }
+  .card-photo-placeholder { width:100%; height:170px; background:#E4DECE; display:flex; align-items:center; justify-content:center; font-size:2.5rem; color:var(--ink3); }
+  .card-body { padding:1rem 1.1rem 1rem; }
+  .card-price { font-family:'Fraunces',serif; font-size:28px; font-weight:400; color:var(--green); line-height:1; margin-bottom:6px; }
+  .card-price-empty { font-size:13px; color:var(--ink3); font-style:italic; margin-bottom:6px; }
+  .card-title { font-family:'Fraunces',serif; font-weight:400; font-size:16px; color:var(--ink); margin-bottom:8px; line-height:1.3; }
+  .badges { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px; }
+  .badge { font-size:12px; font-weight:400; padding:3px 9px; border-radius:20px; }
+  .badge-dist  { background:var(--blueBg);  color:var(--blue); }
+  .badge-stars { background:var(--amberBg); color:var(--amber); }
+  .card-comment { font-size:13px; color:var(--ink2); line-height:1.55; margin-bottom:10px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .card-footer { display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px; margin-top:4px; }
+  .card-link { font-size:13px; color:var(--accent); text-decoration:none; font-weight:500; }
+  .card-link:hover { text-decoration:underline; }
+  .card-actions { display:flex; gap:4px; }
+  .icon-btn { background:none; border:none; cursor:pointer; padding:5px 7px; border-radius:8px; font-size:13px; color:var(--ink3); transition:background 0.1s; }
+  .icon-btn:hover { background:rgba(28,25,23,0.08); color:var(--ink); }
+  .card-date { font-size:11px; color:var(--ink3); }
+
+  /* TABLE */
+  .table-wrap { overflow-x:auto; border-radius:var(--radius); border:1px solid var(--border); background:white; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  thead th { background:var(--ink); color:var(--cream); font-weight:400; font-size:11px; text-transform:uppercase; letter-spacing:0.07em; padding:11px 14px; text-align:left; white-space:nowrap; }
+  tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:var(--cream); }
+  td { padding:12px 14px; vertical-align:middle; }
+  .td-price { font-family:'Fraunces',serif; font-size:20px; font-weight:400; color:var(--green); white-space:nowrap; }
+  .td-name { font-weight:400; color:var(--ink); }
+  .td-dist { font-size:13px; color:var(--ink3); white-space:nowrap; }
+  .td-stars { color:var(--accent2); letter-spacing:1px; white-space:nowrap; }
+  .td-comment { font-size:13px; color:var(--ink2); max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .td-actions { display:flex; gap:4px; }
+  .td-link { font-size:13px; color:var(--accent); text-decoration:none; white-space:nowrap; }
+  .td-link:hover { text-decoration:underline; }
+
+  /* EMPTY */
+  .empty { text-align:center; padding:4rem 1rem; }
+  .empty-icon { font-size:3rem; margin-bottom:1rem; }
+  .empty h3 { font-family:'Fraunces',serif; font-weight:300; font-size:1.3rem; color:var(--ink2); }
+  .empty p { font-size:13px; color:var(--ink3); margin-top:6px; }
+
+  /* MODAL */
+  .overlay { display:none; position:fixed; inset:0; background:rgba(28,25,23,0.55); z-index:200; align-items:center; justify-content:center; padding:1rem; }
+  .overlay.open { display:flex; }
+  .modal { background:white; border-radius:16px; width:100%; max-width:560px; max-height:92vh; overflow-y:auto; padding:1.75rem; box-shadow:0 8px 40px rgba(28,25,23,0.2); }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; }
+  .modal h2 { font-family:'Fraunces',serif; font-weight:400; font-size:1.4rem; }
+  .close-btn { background:var(--warm); border:none; cursor:pointer; width:30px; height:30px; border-radius:50%; font-size:16px; color:var(--ink2); display:flex; align-items:center; justify-content:center; }
+  .close-btn:hover { color:var(--ink); }
+  .field { margin-bottom:1rem; }
+  .field label { display:block; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink3); margin-bottom:5px; }
+  .field input, .field textarea { width:100%; padding:10px 12px; border:1px solid var(--border2); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:14px; color:var(--ink); background:var(--cream); outline:none; transition:border 0.15s; }
+  .field input:focus, .field textarea:focus { border-color:var(--accent); }
+  .field textarea { resize:vertical; min-height:80px; }
+  .star-row { display:flex; gap:6px; margin-top:4px; }
+  .star { font-size:24px; cursor:pointer; color:var(--ink3); transition:color 0.1s; user-select:none; }
+  .star.on { color:#E8824A; }
+  .star:hover { color:#E8824A; }
+  .photo-row { display:flex; gap:8px; }
+  .photo-row input { flex:1; }
+  .btn-add-photo { background:var(--warm); border:1px solid var(--border2); border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer; white-space:nowrap; color:var(--ink); font-family:'DM Sans',sans-serif; }
+  .btn-add-photo:hover { background:#e0d9cf; }
+  .photo-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+  .photo-chip { font-size:12px; background:var(--warm); border:1px solid var(--border); border-radius:20px; padding:3px 10px; display:flex; align-items:center; gap:5px; color:var(--ink2); }
+  .photo-chip button { background:none; border:none; cursor:pointer; color:var(--ink3); font-size:13px; padding:0; line-height:1; }
+  .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border); }
+  .btn-save { background:var(--accent); color:white; border:none; border-radius:8px; padding:10px 22px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; cursor:pointer; }
+  .btn-save:hover { background:#A83A0A; }
+  .btn-cancel2 { background:transparent; color:var(--ink2); border:1px solid var(--border2); border-radius:8px; padding:10px 18px; font-family:'DM Sans',sans-serif; font-size:14px; cursor:pointer; }
+  .btn-cancel2:hover { background:var(--warm); }
+  .gallery-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; }
+  .gallery-grid img { width:100%; height:140px; object-fit:cover; border-radius:8px; cursor:zoom-in; }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--cream); font-size:13px; padding:10px 20px; border-radius:20px; opacity:0; pointer-events:none; transition:opacity 0.3s; z-index:999; white-space:nowrap; }
+  .toast.show { opacity:1; }
+
+  @media (max-width:600px) {
+    .main { padding:1.25rem; }
+    .site-header { padding:1.75rem 1.25rem 1.5rem; }
+    .toolbar { flex-direction:column; align-items:stretch; }
+    .view-toggle { margin-left:0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <p class="header-eyebrow">Lista colaborativa</p>
+    <h1 class="header-title">Viaje<br><em>Valencia 2026</em></h1>
+    <p class="header-sub">Del 30/05 al 15/06 &#127480;&#127466;</p>
+    <span class="header-count" id="headerCount">0 departamentos</span>
+  </div>
+</header>
+
+<main class="main">
+
+  <div class="address-bar">
+    <span>&#128205;</span>
+    <span><strong>Direccion de Cami:</strong> Calle Artes y Oficios 37, Piso 1, Puerta 1.</span>
+    <a href="https://maps.app.goo.gl/W8MfAVUEHCt6Kgc46" target="_blank">Ver en Google Maps &#8594;</a>
+  </div>
+
+  <div class="sync-bar">
+    <span class="sync-dot ok" id="syncDot"></span>
+    <span id="syncLabel">Listo</span>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn-add" onclick="openAdd()">+ Agregar departamento</button>
+    <button class="btn-secondary" id="shareLinkBtn" onclick="shareLink()">&#128279; Copiar link para compartir</button>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btnCards" onclick="setView('cards')">&#127183; Tarjetas</button>
+      <button class="view-btn" id="btnTable" onclick="setView('table')">&#128203; Tabla</button>
+    </div>
+  </div>
+
+  <div id="contentArea"></div>
+
+</main>
+
+<!-- ADD/EDIT MODAL -->
+<div class="overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Agregar departamento</h2>
+      <button class="close-btn" onclick="closeModal()">&#10005;</button>
+    </div>
+    <div class="field">
+      <label>Nombre / titulo *</label>
+      <input type="text" id="fName" placeholder="Ej: Piso Ruzafa 2 habitaciones" />
+    </div>
+    <div class="field">
+      <label>Link del anuncio</label>
+      <input type="url" id="fLink" placeholder="https://..." />
+    </div>
+    <div class="field">
+      <label>Precio</label>
+      <input type="text" id="fPrice" placeholder="Ej: 80euros/noche o 900euros/mes" />
+    </div>
+    <div class="field">
+      <label>Distancia a mi casa</label>
+      <input type="text" id="fDist" placeholder="Ej: 10 min caminando, 2 km" />
+    </div>
+    <div class="field">
+      <label>Valoracion</label>
+      <div class="star-row" id="starRow">
+        <span class="star" onclick="setStar(1)">&#9733;</span>
+        <span class="star" onclick="setStar(2)">&#9733;</span>
+        <span class="star" onclick="setStar(3)">&#9733;</span>
+        <span class="star" onclick="setStar(4)">&#9733;</span>
+        <span class="star" onclick="setStar(5)">&#9733;</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Fotos</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <label class="btn-add-photo" style="cursor:pointer;display:flex;align-items:center;gap:6px;flex:1;justify-content:center">
+          &#128193; Subir desde dispositivo
+          <input type="file" id="fPhotoFile" accept="image/*" multiple style="display:none" onchange="addPhotoFiles(event)">
+        </label>
+      </div>
+      <div class="photo-row">
+        <input type="url" id="fPhotoUrl" placeholder="O pega una URL de imagen..." />
+        <button class="btn-add-photo" onclick="addPhoto()">+ URL</button>
+      </div>
+      <div class="photo-chips" id="photoChips"></div>
+    </div>
+    <div class="field">
+      <label>Comentarios y notas</label>
+      <textarea id="fComment" placeholder="Pros, contras, impresiones generales..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel2" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveApt()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- GALLERY MODAL -->
+<div class="overlay" id="galleryModal">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header">
+      <h2 id="galleryTitle">Fotos</h2>
+      <button class="close-btn" onclick="closeGallery()">&#10005;</button>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'vlc_apts_v2';
+let apts = [];
+let editIdx = -1;
+let starVal = 0;
+let photos = [];
+let currentView = localStorage.getItem('vlc_view') || 'cards';
+
+async function loadData() {
+  const params = new URLSearchParams(window.location.search);
+  const blobId = params.get('blob');
+  if (blobId) {
+    setSyncStatus('loading', 'Cargando lista compartida...');
+    try {
+      const res = await fetch('https://jsonblob.com/api/jsonBlob/' + blobId, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error('status ' + res.status);
+      const data = await res.json();
+      const remote = data.apts;
+      if (Array.isArray(remote)) {
+        const local = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const ids = new Set(remote.map(function(a) { return a.id; }));
+        local.forEach(function(a) { if (!ids.has(a.id)) remote.push(a); });
+        apts = remote;
+        localStorage.setItem('vlc_blob_id', blobId);
+        saveLocal(false);
+        history.replaceState(null, '', window.location.pathname);
+        setSyncStatus('ok', 'Lista importada');
+        toast('Lista cargada del link compartido!');
+      }
+    } catch(e) {
+      setSyncStatus('error', 'Error al cargar');
+      toast('No se pudo cargar: ' + e.message);
+      apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    }
+  } else {
+    apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    setSyncStatus('ok', 'Listo');
+  }
+  setView(currentView, false);
+  render();
+}
+
+function setSyncStatus(state, msg) {
+  var dot = document.getElementById('syncDot');
+  var label = document.getElementById('syncLabel');
+  dot.className = 'sync-dot' + (state === 'ok' ? ' ok' : state === 'loading' ? ' loading' : '');
+  label.textContent = msg;
+}
+
+function saveLocal(showMsg) {
+  if (showMsg === undefined) showMsg = true;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(apts));
+  if (showMsg) {
+    var t = new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('syncLabel').textContent = 'Guardado a las ' + t;
+  }
+  render();
+}
+
+function setView(v, save) {
+  if (save === undefined) save = true;
+  currentView = v;
+  if (save) localStorage.setItem('vlc_view', v);
+  document.getElementById('btnCards').classList.toggle('active', v === 'cards');
+  document.getElementById('btnTable').classList.toggle('active', v === 'table');
+  render();
+}
+
+function render() {
+  var area = document.getElementById('contentArea');
+  document.getElementById('headerCount').textContent =
+    apts.length + ' departamento' + (apts.length !== 1 ? 's' : '');
+
+  if (apts.length === 0) {
+    area.innerHTML = '<div class="empty"><div class="empty-icon">&#127961;</div><h3>Todavia no hay departamentos</h3><p>Hace clic en "+ Agregar departamento" para empezar.</p></div>';
+    return;
+  }
+
+  if (currentView === 'table') {
+    renderTable(area);
+  } else {
+    renderCards(area);
+  }
+}
+
+function renderCards(area) {
+  var html = '<div class="grid">';
+  apts.forEach(function(a, i) {
+    var firstPhoto = a.photos && a.photos.length ? a.photos[0] : null;
+    var stars = a.stars ? '&#9733;'.repeat(a.stars) + '&#9734;'.repeat(5 - a.stars) : '';
+    html += '<div class="card">';
+    if (firstPhoto) {
+      html += '<img class="card-photo" src="' + esc(firstPhoto) + '" alt="foto" onerror="this.style.display=\'none\'">';
+    } else {
+      html += '<div class="card-photo-placeholder">&#127968;</div>';
+    }
+    html += '<div class="card-body">';
+    if (a.price) {
+      html += '<div class="card-price">' + esc(a.price) + '</div>';
+    } else {
+      html += '<div class="card-price-empty">Sin precio cargado</div>';
+    }
+    html += '<div class="card-title">' + esc(a.name || 'Sin nombre') + '</div>';
+    html += '<div class="badges">';
+    if (a.dist) html += '<span class="badge badge-dist">&#128205; ' + esc(a.dist) + '</span>';
+    if (a.stars) html += '<span class="badge badge-stars">' + stars + '</span>';
+    html += '</div>';
+    if (a.comment) html += '<p class="card-comment">' + esc(a.comment) + '</p>';
+    html += '<div class="card-footer">';
+    if (a.link) {
+      html += '<a class="card-link" href="' + esc(a.link) + '" target="_blank">Ver anuncio &#8594;</a>';
+    } else {
+      html += '<span class="card-date">' + (a.added || '') + '</span>';
+    }
+    html += '<div class="card-actions">';
+    if (a.photos && a.photos.length > 0) {
+      html += '<button class="icon-btn" title="Fotos" onclick="showGallery(' + i + ')">&#128444; ' + a.photos.length + '</button>';
+    }
+    html += '<button class="icon-btn" onclick="openEdit(' + i + ')">&#9999;</button>';
+    html += '<button class="icon-btn" onclick="delApt(' + i + ')">&#128465;</button>';
+    html += '</div></div></div></div>';
+  });
+  html += '</div>';
+  area.innerHTML = html;
+}
+
+function renderTable(area) {
+  var html = '<div class="table-wrap"><table><thead><tr><th>Precio</th><th>Nombre</th><th>Distancia</th><th>Nota</th><th>Comentario</th><th>Anuncio</th><th></th></tr></thead><tbody>';
+  apts.forEach(function(a, i) {
+    var stars = a.stars ? '&#9733;'.repeat(a.stars) + '&#9734;'.repeat(5 - a.stars) : '&#8212;';
+    html += '<tr>';
+    html += '<td class="td-price">' + (a.price ? esc(a.price) : '<span style="color:var(--ink3);font-size:13px">&#8212;</span>') + '</td>';
+    html += '<td class="td-name">' + esc(a.name || 'Sin nombre') + '</td>';
+    html += '<td class="td-dist">' + (a.dist ? esc(a.dist) : '&#8212;') + '</td>';
+    html += '<td class="td-stars">' + stars + '</td>';
+    html += '<td class="td-comment">' + (a.comment ? esc(a.comment) : '&#8212;') + '</td>';
+    html += '<td>' + (a.link ? '<a class="td-link" href="' + esc(a.link) + '" target="_blank">Ver &#8594;</a>' : '&#8212;') + '</td>';
+    html += '<td><div class="td-actions">';
+    if (a.photos && a.photos.length > 0) html += '<button class="icon-btn" onclick="showGallery(' + i + ')">&#128444;</button>';
+    html += '<button class="icon-btn" onclick="openEdit(' + i + ')">&#9999;</button>';
+    html += '<button class="icon-btn" onclick="delApt(' + i + ')">&#128465;</button>';
+    html += '</div></td></tr>';
+  });
+  html += '</tbody></table></div>';
+  area.innerHTML = html;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function openAdd() {
+  editIdx = -1; starVal = 0; photos = [];
+  document.getElementById('modalTitle').textContent = 'Agregar departamento';
+  ['fName','fLink','fPrice','fDist','fComment','fPhotoUrl'].forEach(function(id) { document.getElementById(id).value = ''; });
+  renderStars(); renderPhotoChips();
+  document.getElementById('modal').classList.add('open');
+  setTimeout(function() { document.getElementById('fName').focus(); }, 100);
+}
+
+function openEdit(i) {
+  editIdx = i;
+  var a = apts[i];
+  starVal = a.stars || 0;
+  photos = (a.photos || []).slice();
+  document.getElementById('modalTitle').textContent = 'Editar departamento';
+  document.getElementById('fName').value    = a.name    || '';
+  document.getElementById('fLink').value    = a.link    || '';
+  document.getElementById('fPrice').value   = a.price   || '';
+  document.getElementById('fDist').value    = a.dist    || '';
+  document.getElementById('fComment').value = a.comment || '';
+  document.getElementById('fPhotoUrl').value = '';
+  renderStars(); renderPhotoChips();
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+function saveApt() {
+  var name = document.getElementById('fName').value.trim();
+  if (!name) { document.getElementById('fName').focus(); return; }
+  var apt = {
+    id: editIdx >= 0 ? apts[editIdx].id : (Date.now().toString(36) + Math.random().toString(36).slice(2)),
+    name: name,
+    link:    document.getElementById('fLink').value.trim(),
+    price:   document.getElementById('fPrice').value.trim(),
+    dist:    document.getElementById('fDist').value.trim(),
+    stars:   starVal,
+    photos:  photos.slice(),
+    comment: document.getElementById('fComment').value.trim(),
+    added:   editIdx >= 0 ? apts[editIdx].added : new Date().toLocaleDateString('es-ES')
+  };
+  if (editIdx >= 0) apts[editIdx] = apt;
+  else apts.unshift(apt);
+  saveLocal(); closeModal();
+}
+
+function delApt(i) {
+  if (confirm('Eliminar "' + (apts[i].name || 'este departamento') + '"?')) {
+    apts.splice(i, 1); saveLocal();
+  }
+}
+
+function setStar(v) { starVal = v; renderStars(); }
+function renderStars() {
+  document.querySelectorAll('#starRow .star').forEach(function(s, i) { s.classList.toggle('on', i < starVal); });
+}
+
+function addPhoto() {
+  var url = document.getElementById('fPhotoUrl').value.trim();
+  if (url) { photos.push(url); document.getElementById('fPhotoUrl').value = ''; renderPhotoChips(); }
+}
+function addPhotoFiles(event) {
+  var files = Array.from(event.target.files);
+  var loaded = 0;
+  files.forEach(function(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      photos.push(e.target.result);
+      loaded++;
+      renderPhotoChips();
+      if (loaded === files.length) toast(files.length + ' foto' + (files.length > 1 ? 's' : '') + ' agregada' + (files.length > 1 ? 's' : ''));
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = '';
+}
+function removePhoto(i) { photos.splice(i, 1); renderPhotoChips(); }
+function renderPhotoChips() {
+  document.getElementById('photoChips').innerHTML = photos.map(function(p, i) {
+    var isData = p.startsWith('data:');
+    var label = isData ? 'imagen ' + (i+1) : (p.length > 30 ? p.slice(0,30)+'...' : p);
+    var thumb = isData ? '<img src="' + p + '" style="width:24px;height:24px;object-fit:cover;border-radius:3px;flex-shrink:0">' : '&#128247;';
+    return '<span class="photo-chip">' + thumb + ' ' + label + ' <button onclick="removePhoto(' + i + ')">x</button></span>';
+  }).join('');
+}
+
+function showGallery(i) {
+  var a = apts[i];
+  document.getElementById('galleryTitle').textContent = a.name || 'Fotos';
+  document.getElementById('galleryGrid').innerHTML = (a.photos || []).map(function(url) {
+    return '<a href="' + esc(url) + '" target="_blank"><img src="' + esc(url) + '" alt="foto" onerror="this.parentElement.style.display=\'none\'"></a>';
+  }).join('');
+  document.getElementById('galleryModal').classList.add('open');
+}
+function closeGallery() { document.getElementById('galleryModal').classList.remove('open'); }
+
+async function shareLink() {
+  if (apts.length === 0) { toast('Primero agrega algun departamento.'); return; }
+  var btn = document.getElementById('shareLinkBtn');
+  btn.textContent = 'Guardando...';
+  btn.disabled = true;
+  try {
+    var payload = apts.map(function(a) {
+      return Object.assign({}, a, { photos: (a.photos||[]).filter(function(p) { return !p.startsWith('data:'); }) });
+    });
+    var hasLocal = apts.some(function(a) { return (a.photos||[]).some(function(p) { return p.startsWith('data:'); }); });
+    var existingId = localStorage.getItem('vlc_blob_id');
+    var blobId = null;
+
+    if (existingId) {
+      try {
+        var r1 = await fetch('https://jsonblob.com/api/jsonBlob/' + existingId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ apts: payload })
+        });
+        if (r1.ok) blobId = existingId;
+      } catch(e2) {}
+    }
+
+    if (!blobId) {
+      var r2 = await fetch('https://jsonblob.com/api/jsonBlob', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ apts: payload })
+      });
+      if (!r2.ok) throw new Error('Error del servidor: ' + r2.status);
+      var loc = r2.headers.get('Location') || '';
+      blobId = loc.split('/').pop();
+      if (!blobId) throw new Error('No se recibio ID');
+      localStorage.setItem('vlc_blob_id', blobId);
+    }
+
+    var shareUrl = window.location.href.split('?')[0] + '?blob=' + blobId;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch(ce) {
+      var ta = document.createElement('textarea');
+      ta.value = shareUrl; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    }
+    toast(hasLocal ? 'Link copiado! (fotos locales no se comparten)' : 'Link copiado! Enviaselo a papa y tio');
+  } catch(e) {
+    toast('Error: ' + (e.message || 'Verifica tu conexion'));
+  } finally {
+    btn.textContent = 'Copiar link para compartir';
+    btn.disabled = false;
+  }
+}
+
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3500);
+}
+
+document.querySelectorAll('.overlay').forEach(function(o) {
+  o.addEventListener('click', function(e) { if (e.target === o) o.classList.remove('open'); });
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') document.querySelectorAll('.overlay.open').forEach(function(o) { o.classList.remove('open'); });
+});
+document.getElementById('fPhotoUrl').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); addPhoto(); }
+});
+
+loadData();
+</script>
+</body>
+</html>
