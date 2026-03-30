@@ -156,7 +156,7 @@
   <div class="header-inner">
     <p class="header-eyebrow">Lista colaborativa</p>
     <h1 class="header-title">Viaje<br><em>Valencia 2026</em></h1>
-    <p class="header-sub">Del 30/05 al 15/06;</p>
+    <p class="header-sub">Del 30/05 al 15/06 &#127480;&#127466;</p>
     <span class="header-count" id="headerCount">0 departamentos</span>
   </div>
 </header>
@@ -216,6 +216,27 @@
     <div class="field">
       <label>Distancia a mi casa</label>
       <input type="text" id="fDist" placeholder="Ej: 10 min caminando, 2 km" />
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field">
+        <label>Dormitorios</label>
+        <select id="fDorms" style="width:100%;padding:10px 12px;border:1px solid rgba(28,25,23,0.22);border-radius:8px;font-family:DM Sans,sans-serif;font-size:14px;color:#1C1917;background:#F7F4EE;outline:none;">
+          <option value="">--</option>
+          <option value="1">1 dormitorio</option>
+          <option value="2">2 dormitorios</option>
+          <option value="3">3 dormitorios</option>
+          <option value="4">4+ dormitorios</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Banos</label>
+        <select id="fBanos" style="width:100%;padding:10px 12px;border:1px solid rgba(28,25,23,0.22);border-radius:8px;font-family:DM Sans,sans-serif;font-size:14px;color:#1C1917;background:#F7F4EE;outline:none;">
+          <option value="">--</option>
+          <option value="1">1 bano</option>
+          <option value="2">2 banos</option>
+          <option value="3">3+ banos</option>
+        </select>
+      </div>
     </div>
     <div class="field">
       <label>Valoracion</label>
@@ -421,6 +442,8 @@ function renderCards(area) {
     html += '<div class="card-title">' + esc(a.name || 'Sin nombre') + '</div>';
     html += '<div class="badges">';
     if (a.dist) html += '<span class="badge badge-dist">&#128205; ' + esc(a.dist) + '</span>';
+    if (a.dorms) html += '<span class="badge" style="background:#F0EDE8;color:#57534E">&#127968; ' + esc(a.dorms) + ' dorm</span>';
+    if (a.banos) html += '<span class="badge" style="background:#F0EDE8;color:#57534E">&#128700; ' + esc(a.banos) + ' ban</span>';
     if (a.stars) html += '<span class="badge badge-stars">' + stars + '</span>';
     html += '</div>';
     if (a.comment) html += '<p class="card-comment">' + esc(a.comment) + '</p>';
@@ -444,12 +467,14 @@ function renderCards(area) {
 
 function renderTable(area) {
   var sorted = getSorted();
-  var html = '<div class="table-wrap"><table><thead><tr><th>Precio</th><th>Nombre</th><th>Distancia</th><th>Nota</th><th>Comentario</th><th>Anuncio</th><th></th></tr></thead><tbody>';
+  var html = '<div class="table-wrap"><table><thead><tr><th>Precio</th><th>Nombre</th><th>Dorm</th><th>Ban</th><th>Distancia</th><th>Nota</th><th>Comentario</th><th>Anuncio</th><th></th></tr></thead><tbody>';
   sorted.forEach(function(a, i) {
     var stars = a.stars ? '&#9733;'.repeat(a.stars) + '&#9734;'.repeat(5 - a.stars) : '&#8212;';
     html += '<tr>';
     html += '<td class="td-price">' + (a.price ? esc(a.price) : '<span style="color:var(--ink3);font-size:13px">&#8212;</span>') + '</td>';
     html += '<td class="td-name">' + esc(a.name || 'Sin nombre') + '</td>';
+    html += '<td style="font-size:13px;color:#57534E;text-align:center">' + (a.dorms ? esc(a.dorms) : '&#8212;') + '</td>';
+    html += '<td style="font-size:13px;color:#57534E;text-align:center">' + (a.banos ? esc(a.banos) : '&#8212;') + '</td>';
     html += '<td class="td-dist">' + (a.dist ? esc(a.dist) : '&#8212;') + '</td>';
     html += '<td class="td-stars">' + stars + '</td>';
     html += '<td class="td-comment">' + (a.comment ? esc(a.comment) : '&#8212;') + '</td>';
@@ -472,6 +497,8 @@ function openAdd() {
   editIdx = -1; starVal = 0; photos = [];
   document.getElementById('modalTitle').textContent = 'Agregar departamento';
   ['fName','fLink','fPrice','fDist','fComment','fPhotoUrl'].forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('fDorms').value = '';
+  document.getElementById('fBanos').value = '';
   renderStars(); renderPhotoChips();
   document.getElementById('modal').classList.add('open');
   setTimeout(function() { document.getElementById('fName').focus(); }, 100);
@@ -488,6 +515,8 @@ function openEdit(i) {
   document.getElementById('fPrice').value   = a.price   || '';
   document.getElementById('fDist').value    = a.dist    || '';
   document.getElementById('fComment').value = a.comment || '';
+  document.getElementById('fDorms').value = a.dorms || '';
+  document.getElementById('fBanos').value = a.banos || '';
   document.getElementById('fPhotoUrl').value = '';
   renderStars(); renderPhotoChips();
   document.getElementById('modal').classList.add('open');
@@ -504,6 +533,8 @@ function saveApt() {
     link:    document.getElementById('fLink').value.trim(),
     price:   document.getElementById('fPrice').value.trim(),
     dist:    document.getElementById('fDist').value.trim(),
+    dorms:   document.getElementById('fDorms').value,
+    banos:   document.getElementById('fBanos').value,
     stars:   starVal,
     photos:  photos.slice(),
     comment: document.getElementById('fComment').value.trim(),
