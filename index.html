@@ -86,20 +86,20 @@
   .card-date { font-size:11px; color:var(--ink3); }
 
   /* TABLE */
-  .table-wrap { overflow-x:auto; border-radius:var(--radius); border:1px solid var(--border); background:white; }
-  table { width:100%; border-collapse:collapse; font-size:14px; }
-  thead th { background:var(--ink); color:var(--cream); font-weight:400; font-size:11px; text-transform:uppercase; letter-spacing:0.07em; padding:11px 14px; text-align:left; white-space:nowrap; }
+  .table-wrap { border-radius:var(--radius); border:1px solid var(--border); background:white; }
+  table { width:100%; border-collapse:collapse; font-size:13px; table-layout:fixed; }
+  thead th { background:var(--ink); color:var(--cream); font-weight:400; font-size:11px; text-transform:uppercase; letter-spacing:0.07em; padding:11px 10px; text-align:left; overflow:hidden; }
   tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
   tbody tr:last-child { border-bottom:none; }
   tbody tr:hover { background:var(--cream); }
-  td { padding:12px 14px; vertical-align:middle; }
-  .td-price { font-family:'Fraunces',serif; font-size:20px; font-weight:400; color:var(--green); white-space:nowrap; }
-  .td-name { font-weight:400; color:var(--ink); }
-  .td-dist { font-size:13px; color:var(--ink3); white-space:nowrap; }
-  .td-stars { color:var(--accent2); letter-spacing:1px; white-space:nowrap; }
-  .td-comment { font-size:13px; color:var(--ink2); max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .td-actions { display:flex; gap:4px; }
-  .td-link { font-size:13px; color:var(--accent); text-decoration:none; white-space:nowrap; }
+  td { padding:10px; vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .td-price { font-family:'Fraunces',serif; font-size:18px; font-weight:400; color:var(--green); width:90px; }
+  .td-name { font-weight:400; color:var(--ink); width:18%; }
+  .td-dist { font-size:12px; color:var(--ink3); width:14%; }
+  .td-stars { color:var(--accent2); letter-spacing:1px; width:80px; }
+  .td-comment { font-size:12px; color:var(--ink2); width:22%; }
+  .td-actions { display:flex; gap:2px; width:80px; }
+  .td-link { font-size:12px; color:var(--accent); text-decoration:none; width:60px; }
   .td-link:hover { text-decoration:underline; }
 
   /* EMPTY */
@@ -296,23 +296,27 @@ let currentView = localStorage.getItem('vlc_view') || 'cards';
 let currentSort = 'new';
 
 async function loadData() {
-  const params = new URLSearchParams(window.location.search);
-  const blobId = params.get('blob');
-  if (blobId) {
+  var params = new URLSearchParams(window.location.search);
+  var npId = params.get('np');
+  var blobId = params.get('blob');
+  var dataParam = params.get('data');
+
+  if (npId || blobId) {
     setSyncStatus('loading', 'Cargando lista compartida...');
     try {
-      const res = await fetch('https://jsonblob.com/api/jsonBlob/' + blobId, {
-        headers: { 'Accept': 'application/json' }
-      });
+      var url = npId
+        ? 'https://api.npoint.io/' + npId
+        : 'https://jsonblob.com/api/jsonBlob/' + blobId;
+      var res = await fetch(url, { headers: { 'Accept': 'application/json' } });
       if (!res.ok) throw new Error('status ' + res.status);
-      const data = await res.json();
-      const remote = data.apts;
+      var data = await res.json();
+      var remote = data.apts;
       if (Array.isArray(remote)) {
-        const local = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        const ids = new Set(remote.map(function(a) { return a.id; }));
+        var local = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        var ids = new Set(remote.map(function(a) { return a.id; }));
         local.forEach(function(a) { if (!ids.has(a.id)) remote.push(a); });
         apts = remote;
-        localStorage.setItem('vlc_blob_id', blobId);
+        if (npId) localStorage.setItem('vlc_npoint_id', npId);
         saveLocal(false);
         history.replaceState(null, '', window.location.pathname);
         setSyncStatus('ok', 'Lista importada');
@@ -323,29 +327,26 @@ async function loadData() {
       toast('No se pudo cargar: ' + e.message);
       apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     }
-  } else {
-    var dataParam = params.get('data');
-    if (dataParam) {
-      try {
-        var decoded = JSON.parse(decodeURIComponent(escape(atob(dataParam))));
-        if (Array.isArray(decoded)) {
-          var local2 = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-          var ids2 = new Set(decoded.map(function(a) { return a.id; }));
-          local2.forEach(function(a) { if (!ids2.has(a.id)) decoded.push(a); });
-          apts = decoded;
-          saveLocal(false);
-          history.replaceState(null, '', window.location.pathname);
-          setSyncStatus('ok', 'Lista importada');
-          toast('Lista cargada del link compartido!');
-        }
-      } catch(e) {
-        apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        setSyncStatus('ok', 'Listo');
+  } else if (dataParam) {
+    try {
+      var decoded = JSON.parse(decodeURIComponent(escape(atob(dataParam))));
+      if (Array.isArray(decoded)) {
+        var local2 = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        var ids2 = new Set(decoded.map(function(a) { return a.id; }));
+        local2.forEach(function(a) { if (!ids2.has(a.id)) decoded.push(a); });
+        apts = decoded;
+        saveLocal(false);
+        history.replaceState(null, '', window.location.pathname);
+        setSyncStatus('ok', 'Lista importada');
+        toast('Lista cargada del link compartido!');
       }
-    } else {
+    } catch(e) {
       apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
       setSyncStatus('ok', 'Listo');
     }
+  } else {
+    apts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    setSyncStatus('ok', 'Listo');
   }
   setView(currentView, false);
   render();
@@ -605,59 +606,40 @@ async function shareLink() {
       return Object.assign({}, a, { photos: (a.photos||[]).filter(function(p) { return !p.startsWith('data:'); }) });
     });
     var hasLocal = apts.some(function(a) { return (a.photos||[]).some(function(p) { return p.startsWith('data:'); }); });
+    var existingId = localStorage.getItem('vlc_npoint_id');
+    var docId = null;
 
-    var existingId = localStorage.getItem('vlc_blob_id');
-    var blobId = null;
-
-    // Try jsonblob first
     if (existingId) {
       try {
-        var r1 = await fetch('https://jsonblob.com/api/jsonBlob/' + existingId, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        var r1 = await fetch('https://api.npoint.io/' + existingId, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ apts: payload })
         });
-        if (r1.ok) blobId = existingId;
+        if (r1.ok) docId = existingId;
       } catch(e2) {}
     }
 
-    if (!blobId) {
-      try {
-        var r2 = await fetch('https://jsonblob.com/api/jsonBlob', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ apts: payload })
-        });
-        if (r2.ok) {
-          var loc = r2.headers.get('Location') || '';
-          blobId = loc.split('/').pop();
-          if (blobId) localStorage.setItem('vlc_blob_id', blobId);
-        }
-      } catch(e3) {}
+    if (!docId) {
+      var r2 = await fetch('https://api.npoint.io/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apts: payload })
+      });
+      if (!r2.ok) throw new Error('Error ' + r2.status);
+      var data2 = await r2.json();
+      docId = data2.token || data2.id;
+      if (!docId) throw new Error('No se recibio ID');
+      localStorage.setItem('vlc_npoint_id', docId);
     }
 
-    // Fallback: encode in URL directly (works always, shorter with few apts)
-    if (!blobId) {
-      var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-      var shareUrl = window.location.href.split('?')[0] + '?data=' + encoded;
-      try { await navigator.clipboard.writeText(shareUrl); }
-      catch {
-        var ta = document.createElement('textarea');
-        ta.value = shareUrl; ta.style.cssText = 'position:fixed;opacity:0';
-        document.body.appendChild(ta); ta.select();
-        document.execCommand('copy'); document.body.removeChild(ta);
-      }
-      toast(hasLocal ? 'Link copiado! (fotos locales no se comparten)' : 'Link copiado! Enviaselo a papa y tio');
-      return;
-    }
-
-    var shareUrl = window.location.href.split('?')[0] + '?blob=' + blobId;
+    var shareUrl = window.location.href.split('?')[0] + '?np=' + docId;
     try { await navigator.clipboard.writeText(shareUrl); }
     catch {
-      var ta2 = document.createElement('textarea');
-      ta2.value = shareUrl; ta2.style.cssText = 'position:fixed;opacity:0';
-      document.body.appendChild(ta2); ta2.select();
-      document.execCommand('copy'); document.body.removeChild(ta2);
+      var ta = document.createElement('textarea');
+      ta.value = shareUrl; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
     }
     toast(hasLocal ? 'Link copiado! (fotos locales no se comparten)' : 'Link copiado! Enviaselo a papa y tio');
   } catch(e) {
